@@ -47,6 +47,10 @@ describe('Send ETH Tests', () => {
   });
 
   it('should input and validate amount', async () => {
+    // Type in a non numeric value
+    await AmountView.typeInTransactionAmount('0xA');
+    // Check that the amount remains 0
+    await AmountView.isTransactionAmountCorrect('0');
     // Input acceptable value
     await AmountView.typeInTransactionAmount('.00001');
     await AmountView.tapNextButton();
@@ -56,11 +60,11 @@ describe('Send ETH Tests', () => {
   });
 
   it('should send ETH to Account 2', async () => {
-    // Check that the amount is correct
+  // Check that the amount is correct
     await TransactionConfirmationView.isTransactionTotalCorrect('0 GoerliETH');
-    // Tap on the Send CTA
+  // Tap on the Send CTA
     await TransactionConfirmationView.tapConfirmButton();
-    // Check that we are on the wallet screen
+  // Check that we are on the wallet screen
     await WalletView.isVisible();
   });
 });
