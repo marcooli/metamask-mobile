@@ -6,6 +6,7 @@ import { connect, useSelector } from 'react-redux';
 import { ethers } from 'ethers';
 import abi from 'human-standard-token-abi';
 import { ethErrors } from 'eth-json-rpc-errors';
+import { v1 as random } from 'uuid';
 
 import Approval from '../../Views/Approval';
 import NotificationManager from '../../../core/NotificationManager';
@@ -86,6 +87,7 @@ const RootRPCMethodsUI = (props) => {
 
   const [customNetworkToAdd, setCustomNetworkToAdd] = useState(null);
   const [customNetworkToSwitch, setCustomNetworkToSwitch] = useState(null);
+  const [qrSigningState, setQrSigningState] = useState(null);
 
   const [hostToApprove, setHostToApprove] = useState(null);
 
@@ -96,6 +98,28 @@ const RootRPCMethodsUI = (props) => {
   const toggleApproveModal = props.toggleApproveModal;
   const toggleDappTransactionModal = props.toggleDappTransactionModal;
   const setEtherTransaction = props.setEtherTransaction;
+  const QRState = props.QRState;
+  const isSigningQRObject = props.isSigningQRObject;
+
+  // Reject pending approval using MetaMask SDK.
+  const rejectPendingApproval = (id, error) => {
+    const { ApprovalController } = Engine.context;
+    try {
+      ApprovalController.reject(id, error);
+    } catch (error) {
+      Logger.error(error, 'Reject while rejecting pending connection request');
+    }
+  };
+
+  // Accept pending approval using MetaMask SDK.
+  const acceptPendingApproval = (id, requestData) => {
+    const { ApprovalController } = Engine.context;
+    try {
+      ApprovalController.accept(id, requestData);
+    } catch (err) {
+      // Ignore err if request already approved or doesn't exists.
+    }
+  };
 
   const showPendingApprovalModal = ({ type, origin }) => {
     InteractionManager.runAfterInteractions(() => {
@@ -438,21 +462,30 @@ const RootRPCMethodsUI = (props) => {
     </Modal>
   );
 
+  const onQRSigningApproval = () => {
+    setShowPendingApproval(false);
+    acceptPendingApproval(qrSigningState.id, qrSigningState.data);
+    setQrSigningState(undefined);
+  };
+
+  const onQRSigningRejected = () => {
+    setShowPendingApproval(false);
+    rejectPendingApproval(qrSigningState.id, qrSigningState.data);
+    setQrSigningState(undefined);
+  };
+
   const renderQRSigningModal = () => {
-    const {
-      isSigningQRObject,
-      QRState,
-      approveModalVisible,
-      dappTransactionModalVisible,
-    } = props;
+    const { QRState, approveModalVisible, dappTransactionModalVisible } = props;
     const shouldRenderThisModal =
-      !showPendingApproval &&
-      !approveModalVisible &&
-      !dappTransactionModalVisible &&
-      isSigningQRObject;
+      !approveModalVisible && !dappTransactionModalVisible;
     return (
       shouldRenderThisModal && (
-        <QRSigningModal isVisible={isSigningQRObject} QRState={QRState} />
+        <QRSigningModal
+          isVisible={showPendingApproval?.type === ApprovalTypes.QR_SIGNING}
+          QRState={QRState}
+          onSuccess={onQRSigningApproval}
+          onCancel={onQRSigningRejected}
+        />
       )
     );
   };
@@ -515,26 +548,6 @@ const RootRPCMethodsUI = (props) => {
     props.approveModalVisible && (
       <Approve modalVisible toggleApproveModal={props.toggleApproveModal} />
     );
-
-  // Reject pending approval using MetaMask SDK.
-  const rejectPendingApproval = (id, error) => {
-    const { ApprovalController } = Engine.context;
-    try {
-      ApprovalController.reject(id, error);
-    } catch (error) {
-      Logger.error(error, 'Reject while rejecting pending connection request');
-    }
-  };
-
-  // Accept pending approval using MetaMask SDK.
-  const acceptPendingApproval = (id, requestData) => {
-    const { ApprovalController } = Engine.context;
-    try {
-      ApprovalController.accept(id, requestData);
-    } catch (err) {
-      // Ignore err if request already approved or doesn't exists.
-    }
-  };
 
   const onAddCustomNetworkReject = () => {
     setShowPendingApproval(false);
@@ -766,6 +779,13 @@ const RootRPCMethodsUI = (props) => {
             origin: request.origin,
           });
           break;
+        case ApprovalTypes.QR_SIGNING:
+          setQrSigningState({ data: requestData, id: request.id });
+          showPendingApprovalModal({
+            type: ApprovalTypes.QR_SIGNING,
+            origin: request.origin,
+          });
+          break;
         default:
           break;
       }
@@ -773,6 +793,25 @@ const RootRPCMethodsUI = (props) => {
       setShowPendingApproval(false);
     }
   };
+
+  useEffect(() => {
+    async function checkAndAddQRSigningApproval() {
+      if (isSigningQRObject) {
+        const { ApprovalController } = Engine.context;
+        try {
+          await ApprovalController.add({
+            id: random(),
+            origin: 'QR_signing',
+            requestData: QRState,
+            type: ApprovalTypes.QR_SIGNING,
+          });
+        } catch (error) {
+          throw new Error('QR signing failed');
+        }
+      }
+    }
+    checkAndAddQRSigningApproval();
+  }, [QRState, isSigningQRObject]);
 
   useEffect(() => {
     initializeWalletConnect();
