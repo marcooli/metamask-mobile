@@ -44,12 +44,11 @@ import {
   toggleApproveModal,
 } from '../../../actions/modals';
 import { swapsUtils } from '@metamask/swaps-controller';
-import { query } from '@metamask/controller-utils';
+import { ApprovalType, query } from '@metamask/controller-utils';
 import Analytics from '../../../core/Analytics/Analytics';
 import BigNumber from 'bignumber.js';
 import { getTokenList } from '../../../reducers/tokens';
 import { toLowerCaseEquals } from '../../../util/general';
-import { ApprovalTypes } from '../../../core/RPCMethods/RPCMethodMiddleware';
 import { KEYSTONE_TX_CANCELED } from '../../../constants/error';
 import { MetaMetricsEvents } from '../../../core/Analytics';
 import AnalyticsV2 from '../../../util/analyticsV2';
@@ -130,7 +129,7 @@ const RootRPCMethodsUI = (props) => {
     setSignMessageParams(signMessageParams);
     setSignType(type);
     showPendingApprovalModal({
-      type: ApprovalTypes.SIGN_MESSAGE,
+      type,
       origin: signMessageParams.origin,
     });
   };
@@ -399,9 +398,14 @@ const RootRPCMethodsUI = (props) => {
   const toggleExpandedMessage = () =>
     setShowExpandedMessage(!showExpandedMessage);
 
+  const isSigningApprovalTypeValid = (type) =>
+    type === ApprovalType.signType ||
+    type === ApprovalType.EthSign ||
+    type === ApprovalType.EthSignTypedData;
+
   const renderSigningModal = () => (
     <Modal
-      isVisible={showPendingApproval?.type === ApprovalTypes.SIGN_MESSAGE}
+      isVisible={isSigningApprovalTypeValid(showPendingApproval?.type)}
       animationIn="slideInUp"
       animationOut="slideOutDown"
       style={styles.bottomModal}
@@ -493,7 +497,7 @@ const RootRPCMethodsUI = (props) => {
     const meta = walletConnectRequestInfo?.data?.peerMeta || null;
     return (
       <Modal
-        isVisible={showPendingApproval?.type === ApprovalTypes.WALLET_CONNECT}
+        isVisible={showPendingApproval?.type === ApprovalType.WalletConnect}
         animationIn="slideInUp"
         animationOut="slideOutDown"
         style={styles.bottomModal}
@@ -551,7 +555,7 @@ const RootRPCMethodsUI = (props) => {
    */
   const renderAddCustomNetworkModal = () => (
     <Modal
-      isVisible={showPendingApproval?.type === ApprovalTypes.ADD_ETHEREUM_CHAIN}
+      isVisible={showPendingApproval?.type === ApprovalType.AddEthereumChain}
       animationIn="slideInUp"
       animationOut="slideOutDown"
       style={styles.bottomModal}
@@ -593,9 +597,7 @@ const RootRPCMethodsUI = (props) => {
    */
   const renderSwitchCustomNetworkModal = () => (
     <Modal
-      isVisible={
-        showPendingApproval?.type === ApprovalTypes.SWITCH_ETHEREUM_CHAIN
-      }
+      isVisible={showPendingApproval?.type === ApprovalType.SwitchEthereumChain}
       animationIn="slideInUp"
       animationOut="slideOutDown"
       style={styles.bottomModal}
@@ -640,7 +642,7 @@ const RootRPCMethodsUI = (props) => {
    */
   const renderAccountsApprovalModal = () => (
     <Modal
-      isVisible={showPendingApproval?.type === ApprovalTypes.CONNECT_ACCOUNTS}
+      isVisible={showPendingApproval?.type === ApprovalType.ConnectAccounts}
       animationIn="slideInUp"
       animationOut="slideOutDown"
       style={styles.bottomModal}
@@ -721,7 +723,7 @@ const RootRPCMethodsUI = (props) => {
       }
 
       switch (request.type) {
-        case ApprovalTypes.REQUEST_PERMISSIONS:
+        case ApprovalType.WalletRequestPermissions:
           if (requestData?.permissions?.eth_accounts) {
             const {
               metadata: { id },
@@ -742,31 +744,31 @@ const RootRPCMethodsUI = (props) => {
             );
           }
           break;
-        case ApprovalTypes.CONNECT_ACCOUNTS:
+        case ApprovalType.ConnectAccounts:
           setHostToApprove({ data: requestData, id: request.id });
           showPendingApprovalModal({
-            type: ApprovalTypes.CONNECT_ACCOUNTS,
+            type: ApprovalType.ConnectAccounts,
             origin: request.origin,
           });
           break;
-        case ApprovalTypes.SWITCH_ETHEREUM_CHAIN:
+        case ApprovalType.SwitchEthereumChain:
           setCustomNetworkToSwitch({ data: requestData, id: request.id });
           showPendingApprovalModal({
-            type: ApprovalTypes.SWITCH_ETHEREUM_CHAIN,
+            type: ApprovalType.SwitchEthereumChain,
             origin: request.origin,
           });
           break;
-        case ApprovalTypes.ADD_ETHEREUM_CHAIN:
+        case ApprovalType.AddEthereumChain:
           setCustomNetworkToAdd({ data: requestData, id: request.id });
           showPendingApprovalModal({
-            type: ApprovalTypes.ADD_ETHEREUM_CHAIN,
+            type: ApprovalType.AddEthereumChain,
             origin: request.origin,
           });
           break;
-        case ApprovalTypes.WALLET_CONNECT:
+        case ApprovalType.WalletConnect:
           setWalletConnectRequestInfo({ data: requestData, id: request.id });
           showPendingApprovalModal({
-            type: ApprovalTypes.WALLET_CONNECT,
+            type: ApprovalType.WalletConnect,
             origin: request.origin,
           });
           break;
@@ -782,17 +784,19 @@ const RootRPCMethodsUI = (props) => {
     initializeWalletConnect();
 
     Engine.context.MessageManager.hub.on('unapprovedMessage', (messageParams) =>
-      onUnapprovedMessage(messageParams, 'eth'),
+      onUnapprovedMessage(messageParams, ApprovalType.EthSign),
     );
 
     Engine.context.PersonalMessageManager.hub.on(
       'unapprovedMessage',
-      (messageParams) => onUnapprovedMessage(messageParams, 'personal'),
+      (messageParams) =>
+        onUnapprovedMessage(messageParams, ApprovalType.PersonalSign),
     );
 
     Engine.context.TypedMessageManager.hub.on(
       'unapprovedMessage',
-      (messageParams) => onUnapprovedMessage(messageParams, 'typed'),
+      (messageParams) =>
+        onUnapprovedMessage(messageParams, ApprovalType.EthSignTypedData),
     );
 
     Engine.controllerMessenger.subscribe(

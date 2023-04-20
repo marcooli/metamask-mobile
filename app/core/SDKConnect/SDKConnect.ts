@@ -13,9 +13,7 @@ import Minimizer from 'react-native-minimizer';
 import Device from '../../util/device';
 import BackgroundBridge from '../BackgroundBridge/BackgroundBridge';
 import Engine from '../Engine';
-import getRpcMethodMiddleware, {
-  ApprovalTypes,
-} from '../RPCMethods/RPCMethodMiddleware';
+import getRpcMethodMiddleware from '../RPCMethods/RPCMethodMiddleware';
 
 import { ApprovalController } from '@metamask/approval-controller';
 import { KeyringController } from '@metamask/keyring-controller';
@@ -52,7 +50,7 @@ import {
   RTCSessionDescription,
   RTCView,
 } from 'react-native-webrtc';
-import { Json } from '@metamask/controller-utils';
+import { ApprovalType, Json } from '@metamask/controller-utils';
 import { parseSource } from './utils/parseSource';
 
 export const MIN_IN_MS = 1000 * 60;
@@ -556,7 +554,7 @@ export class Connection extends EventEmitter2 {
 
     this.approvalPromise = approvalController.add({
       origin: this.origin,
-      type: ApprovalTypes.CONNECT_ACCOUNTS,
+      type: ApprovalType.ConnectAccounts,
       requestData: {
         hostname: this.originatorInfo?.title ?? '',
         pageMeta: {
