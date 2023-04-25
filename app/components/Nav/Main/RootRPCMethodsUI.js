@@ -130,7 +130,7 @@ const RootRPCMethodsUI = (props) => {
     setSignType(type);
     showPendingApprovalModal({
       type,
-      origin: signMessageParams.origin,
+      origin: signMessageParams.origin || origin,
     });
   };
 
@@ -398,14 +398,14 @@ const RootRPCMethodsUI = (props) => {
   const toggleExpandedMessage = () =>
     setShowExpandedMessage(!showExpandedMessage);
 
-  const isSigningApprovalTypeValid = (type) =>
-    type === ApprovalType.signType ||
+  const isSigningApprovalType = (type) =>
+    type === ApprovalType.PersonalSign ||
     type === ApprovalType.EthSign ||
     type === ApprovalType.EthSignTypedData;
 
   const renderSigningModal = () => (
     <Modal
-      isVisible={isSigningApprovalTypeValid(showPendingApproval?.type)}
+      isVisible={isSigningApprovalType(showPendingApproval?.type)}
       animationIn="slideInUp"
       animationOut="slideOutDown"
       style={styles.bottomModal}
@@ -421,7 +421,7 @@ const RootRPCMethodsUI = (props) => {
       swipeDirection={'down'}
       propagateSwipe
     >
-      {signType === 'personal' && (
+      {signType === ApprovalType.PersonalSign && (
         <PersonalSign
           messageParams={signMessageParams}
           onCancel={onSignAction}
@@ -431,7 +431,7 @@ const RootRPCMethodsUI = (props) => {
           showExpandedMessage={showExpandedMessage}
         />
       )}
-      {signType === 'typed' && (
+      {signType === ApprovalType.EthSignTypedData && (
         <TypedSign
           navigation={props.navigation}
           messageParams={signMessageParams}
@@ -442,7 +442,7 @@ const RootRPCMethodsUI = (props) => {
           showExpandedMessage={showExpandedMessage}
         />
       )}
-      {signType === 'eth' && (
+      {signType === ApprovalType.EthSign && (
         <MessageSign
           navigation={props.navigation}
           messageParams={signMessageParams}
