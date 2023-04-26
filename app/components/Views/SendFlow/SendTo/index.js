@@ -439,6 +439,10 @@ class SendFlow extends PureComponent {
     this.setState({ ...state });
   };
 
+  fromAccountBalanceState = (value) => {
+    this.setState({ balanceIsZero: value });
+  };
+
   getAddressNameFromBookOrIdentities = (toAccount) => {
     const { addressBook, identities, network } = this.props;
     if (!toAccount) return;
@@ -557,7 +561,9 @@ class SendFlow extends PureComponent {
         testID={SEND_SCREEN}
       >
         <View style={styles.imputWrapper}>
-          <SendToAddressFrom />
+          <SendToAddressFrom
+            fromAccountBalanceState={this.fromAccountBalanceState}
+          />
           <SendToAddressTo
             inputRef={this.addressToInputRef}
             addressToReady={toSelectedAddressReady}
