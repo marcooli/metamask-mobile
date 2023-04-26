@@ -21,7 +21,6 @@ import WarningMessage from '../WarningMessage';
 import { getSendFlowTitle } from '../../../UI/Navbar';
 import ActionModal from '../../../UI/ActionModal';
 import StyledButton from '../../../UI/StyledButton';
-
 import { MetaMetricsEvents } from '../../../../core/Analytics';
 import AnalyticsV2 from '../../../../util/analyticsV2';
 import { handleNetworkSwitch } from '../../../../util/networks';
@@ -48,6 +47,10 @@ import { strings } from '../../../../../locales/i18n';
 import {
   ADDRESS_BOOK_NEXT_BUTTON,
   ADD_ADDRESS_MODAL_CONTAINER_ID,
+  NO_ETH_MESSAGE,
+  SEND_SCREEN,
+  ADDRESS_ERROR,
+  ADD_ADDRESS_BUTTON_ID,
 } from '../../../../constants/test-ids';
 import Routes from '../../../../constants/navigation/Routes';
 import {
@@ -68,8 +71,8 @@ import {
 } from '../../../../selectors/networkController';
 import { isNetworkBuyNativeTokenSupported } from '../../../UI/FiatOnRampAggregator/utils';
 import { getRampNetworks } from '../../../../reducers/fiatOrders';
-import SendToAddressFrom from './SendAddressFrom';
-import SendToAddressTo from './SendToAddressTo';
+import SendToAddressFrom from '../AddressFrom';
+import SendToAddressTo from '../AddressTo';
 
 const dummy = () => true;
 
@@ -245,7 +248,6 @@ class SendFlow extends PureComponent {
   };
 
   onSaveToAddressBook = () => {
-    console.log('onSaveToAddressBook');
     const { network } = this.props;
     const { toAccount, alias, toEnsAddressResolved } = this.state;
     const { AddressBookController } = Engine.context;
@@ -493,6 +495,7 @@ class SendFlow extends PureComponent {
      * then validation is not necessary since it was already validated
      */
     if (addressName) {
+      // return
       this.setState({
         toAccount,
         toSelectedAddressReady: true,
@@ -551,7 +554,7 @@ class SendFlow extends PureComponent {
       <SafeAreaView
         edges={['bottom']}
         style={styles.wrapper}
-        testID={'send-screen'}
+        testID={SEND_SCREEN}
       >
         <View style={styles.imputWrapper}>
           <SendToAddressFrom />
@@ -567,6 +570,7 @@ class SendFlow extends PureComponent {
               (!existingContact && confusableCollection) || []
             }
             isFromAddressBook={isFromAddressBook}
+            onToSelectedAddressChange={this.onToSelectedAddressChange}
             highlighted={false}
           />
         </View>
@@ -593,10 +597,7 @@ class SendFlow extends PureComponent {
           <View style={styles.nextActionWrapper}>
             <ScrollView>
               {addressError && addressError !== CONTACT_ALREADY_SAVED && (
-                <View
-                  style={styles.addressErrorWrapper}
-                  testID={'address-error'}
-                >
+                <View style={styles.addressErrorWrapper} testID={ADDRESS_ERROR}>
                   <ErrorMessage
                     errorMessage={this.renderAddressError(addressError)}
                     errorContinue={!!errorContinue}
@@ -638,7 +639,7 @@ class SendFlow extends PureComponent {
                 <TouchableOpacity
                   style={styles.myAccountsTouchable}
                   onPress={this.toggleAddToAddressBookModal}
-                  testID={'add-address-button'}
+                  testID={ADD_ADDRESS_BUTTON_ID}
                 >
                   <Text
                     style={styles.myAccountsText}
@@ -668,7 +669,7 @@ class SendFlow extends PureComponent {
         )}
 
         {!errorContinue && (
-          <View style={styles.footerContainer} testID={'no-eth-message'}>
+          <View style={styles.footerContainer} testID={NO_ETH_MESSAGE}>
             {!errorContinue && (
               <View style={styles.buttonNextWrapper}>
                 <StyledButton
