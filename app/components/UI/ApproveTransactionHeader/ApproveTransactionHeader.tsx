@@ -145,11 +145,13 @@ const ApproveTransactionHeader = ({
 
   return (
     <View style={styles.transactionHeader}>
-      <TagUrl
-        imageSource={{ uri: favIconUrl }}
-        label={domainTitle}
-        style={styles.tagUrl}
-      />
+      {origin ? (
+        <TagUrl
+          imageSource={{ uri: favIconUrl }}
+          label={domainTitle}
+          style={styles.tagUrl}
+        />
+      ) : null}
       <AccountBalance
         accountAddress={activeAddress}
         accountNativeCurrency={accountInfo.currency}
